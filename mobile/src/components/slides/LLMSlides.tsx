@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SlideContent } from '../../types';
 import { LLMService } from '../../api/llm';
+import { COLORS, FONTS, globalStyles } from '../../theme';
 
 export const LLMCheckSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     const [answer, setAnswer] = useState('');
@@ -54,9 +55,18 @@ export const LLMCheckSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
 };
 
 export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
+    const conversationFlow = data.conversation_flow || [];
+    const [currentStep, setCurrentStep] = useState(0);
     const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Initialize with the first bot message from conversation_flow
+    React.useEffect(() => {
+        if (conversationFlow.length > 0 && messages.length === 0) {
+            setMessages([{ role: 'assistant', content: conversationFlow[0].chatbot_message }]);
+        }
+    }, [conversationFlow]);
 
     const handleSend = async () => {
         if (!input.trim()) return;
@@ -67,59 +77,226 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
         setLoading(true);
 
         try {
-            // Context would be bigger in real app, simplified here
             const history = messages.map(m => ({ role: m.role, content: m.content }));
             history.push({ role: 'user', content: userMsg });
 
             const systemMsg = { role: 'system' as const, content: `Roleplay: ${data.setting}. Goal: Have a conversation.` };
 
             const response = await LLMService.chatCompletion([systemMsg, ...history], 150);
-
-            // In python version there is logic to parse CONCEPTS_COVERED.
-            // Here we just display the response for MVP compliance.
-            // If response has "CONCEPTS_COVERED: [...]", remove it for display?
-            // Simple cleanup:
             const cleanResponse = response.replace(/CONCEPTS_COVERED:.*?(\n|$)/g, '').trim();
 
             setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
+
+            if (currentStep < conversationFlow.length - 1) {
+                setCurrentStep(prev => prev + 1);
+            }
         } catch (e) {
-            setMessages(prev => [...prev, { role: 'assistant', content: "Connection error." }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: "..." }]);
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <View style={styles.scenarioContainer}>
-            <Text style={styles.sceneTitle}>{data.title}</Text>
-            <Text style={styles.sceneSetting}>{data.setting}</Text>
+    const currentHint = conversationFlow[currentStep]?.title || '';
 
-            <ScrollView style={styles.chatArea}>
+    return (
+        <KeyboardAvoidingView
+            style={chatStyles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={100}
+        >
+            {/* Narrative header */}
+            <View style={chatStyles.chapterHeader}>
+                <Text style={chatStyles.chapterNumber}>— SCENE —</Text>
+                <Text style={chatStyles.chapterTitle}>{data.title}</Text>
+                <Text style={chatStyles.settingText}>{data.setting}</Text>
+            </View>
+
+            {/* Conversation as screenplay/script format */}
+            <ScrollView
+                style={chatStyles.dialogueScroll}
+                contentContainerStyle={chatStyles.dialogueContent}
+            >
                 {messages.map((m, i) => (
-                    <View key={i} style={[
-                        styles.msgBubble,
-                        m.role === 'user' ? styles.userBubble : styles.botBubble
-                    ]}>
-                        <Text style={styles.msgText}>{m.content}</Text>
+                    <View key={i} style={chatStyles.dialogueLine}>
+                        <Text style={chatStyles.speakerName}>
+                            {m.role === 'assistant' ? 'Vendor' : 'You'}
+                        </Text>
+                        <Text style={[
+                            chatStyles.dialogueText,
+                            m.role === 'user' && chatStyles.yourDialogue
+                        ]}>
+                            "{m.content}"
+                        </Text>
                     </View>
                 ))}
+
+                {loading && (
+                    <View style={chatStyles.dialogueLine}>
+                        <Text style={chatStyles.speakerName}>Vendor</Text>
+                        <Text style={chatStyles.thinkingText}>...</Text>
+                    </View>
+                )}
             </ScrollView>
 
-            <View style={styles.inputArea}>
-                <TextInput
-                    style={styles.chatInput}
-                    value={input}
-                    onChangeText={setInput}
-                    placeholder="Type..."
-                />
-                <TouchableOpacity style={styles.sendBtn} onPress={handleSend} disabled={loading}>
-                    {loading ? <ActivityIndicator size="small" color="white" /> : <Text style={styles.btnText}>Send</Text>}
-                </TouchableOpacity>
+            {/* Prompt area */}
+            <View style={chatStyles.promptArea}>
+                {currentHint && (
+                    <Text style={chatStyles.stageDirection}>
+                        {currentHint}
+                    </Text>
+                )}
+
+                <View style={chatStyles.inputRow}>
+                    <TextInput
+                        style={chatStyles.scriptInput}
+                        value={input}
+                        onChangeText={setInput}
+                        placeholder="What do you say?"
+                        placeholderTextColor="#999"
+                        multiline
+                    />
+                    <TouchableOpacity
+                        style={[chatStyles.speakBtn, loading && chatStyles.speakBtnDisabled]}
+                        onPress={handleSend}
+                        disabled={loading}
+                    >
+                        <Text style={chatStyles.speakBtnText}>→</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 };
 
+// Immersive chat styles - storybook/screenplay aesthetic
+const chatStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FAF8F3', // Warm paper
+    },
+    chapterHeader: {
+        paddingVertical: 24,
+        paddingHorizontal: 24,
+        alignItems: 'center',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E8E4DB',
+        borderStyle: 'dashed' as any,
+    },
+    chapterNumber: {
+        fontSize: 11,
+        letterSpacing: 3,
+        color: '#A09080',
+        fontFamily: FONTS.sans,
+        marginBottom: 8,
+    },
+    chapterTitle: {
+        fontSize: 22,
+        fontFamily: FONTS.serif,
+        color: '#2C2416',
+        textAlign: 'center',
+        fontWeight: '500',
+    },
+    settingText: {
+        fontSize: 14,
+        fontFamily: FONTS.serif,
+        fontStyle: 'italic',
+        color: '#6B5D4D',
+        textAlign: 'center',
+        marginTop: 8,
+        lineHeight: 20,
+    },
+    dialogueScroll: {
+        flex: 1,
+    },
+    dialogueContent: {
+        padding: 24,
+        paddingTop: 20,
+    },
+    dialogueLine: {
+        marginBottom: 20,
+    },
+    speakerName: {
+        fontSize: 12,
+        fontFamily: FONTS.sans,
+        color: '#8B7355',
+        marginBottom: 4,
+        letterSpacing: 0.5,
+    },
+    dialogueText: {
+        fontSize: 18,
+        fontFamily: FONTS.serif,
+        color: '#2C2416',
+        lineHeight: 26,
+        paddingLeft: 12,
+        borderLeftWidth: 2,
+        borderLeftColor: '#E0D8C8',
+    },
+    yourDialogue: {
+        color: '#1A4A3A', // Darker green for your words
+        borderLeftColor: '#A8C4A0',
+    },
+    thinkingText: {
+        fontSize: 16,
+        fontFamily: FONTS.serif,
+        fontStyle: 'italic',
+        color: '#A09080',
+        paddingLeft: 12,
+    },
+    promptArea: {
+        padding: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#E8E4DB',
+        backgroundColor: '#F5F2EA',
+    },
+    stageDirection: {
+        fontSize: 13,
+        fontFamily: FONTS.serif,
+        fontStyle: 'italic',
+        color: '#8B6914',
+        textAlign: 'center',
+        marginBottom: 12,
+        paddingHorizontal: 20,
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+    },
+    scriptInput: {
+        flex: 1,
+        minHeight: 44,
+        maxHeight: 100,
+        backgroundColor: '#FFFEFA',
+        borderWidth: 1,
+        borderColor: '#D8D0C0',
+        borderRadius: 4,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        fontSize: 16,
+        fontFamily: FONTS.serif,
+        color: '#2C2416',
+        marginRight: 10,
+    },
+    speakBtn: {
+        width: 44,
+        height: 44,
+        backgroundColor: '#2C2416',
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    speakBtnDisabled: {
+        backgroundColor: '#C0B8A8',
+    },
+    speakBtnText: {
+        color: '#FFF',
+        fontSize: 20,
+        fontWeight: '300',
+    },
+});
+
+// Original styles for other components (LLMCheckSlide)
 const styles = StyleSheet.create({
     container: {
         padding: 24,
@@ -129,113 +306,60 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         textAlign: 'center',
-        marginBottom: 20
+        marginBottom: 20,
+        fontFamily: FONTS.serif,
+        color: COLORS.text
     },
     input: {
         width: '100%',
         borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 8,
+        borderColor: COLORS.border,
+        borderRadius: 4,
         padding: 12,
         minHeight: 100,
         textAlignVertical: 'top',
         marginBottom: 16,
-        backgroundColor: '#f9f9f9'
+        backgroundColor: '#FFF',
+        fontFamily: FONTS.sans,
+        color: COLORS.text
     },
     button: {
-        backgroundColor: '#6200ee',
+        backgroundColor: COLORS.primary,
         paddingVertical: 12,
         paddingHorizontal: 24,
-        borderRadius: 8,
+        borderRadius: 4,
         width: '100%',
         alignItems: 'center'
     },
     btnText: {
         color: 'white',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+        fontFamily: FONTS.sans
     },
     feedbackBox: {
         marginTop: 24,
         padding: 16,
-        backgroundColor: '#e3f2fd',
-        borderRadius: 8,
-        width: '100%'
+        backgroundColor: COLORS.background,
+        borderRadius: 4,
+        width: '100%',
+        borderWidth: 1,
+        borderColor: COLORS.border
     },
     feedbackTitle: {
         fontWeight: 'bold',
         marginBottom: 8,
-        color: '#1565c0'
+        color: COLORS.primary,
+        fontFamily: FONTS.serif
     },
     feedbackText: {
-        color: '#0d47a1',
-        lineHeight: 20
+        color: COLORS.text,
+        lineHeight: 20,
+        fontFamily: FONTS.sans
     },
-    scenarioContainer: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    sceneTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        padding: 16,
-        backgroundColor: 'white',
-        textAlign: 'center'
-    },
-    sceneSetting: {
-        padding: 8,
-        textAlign: 'center',
-        color: '#666',
-        fontSize: 12
-    },
-    chatArea: {
-        flex: 1,
-        padding: 16,
-    },
-    msgBubble: {
-        padding: 12,
-        borderRadius: 16,
-        marginBottom: 8,
-        maxWidth: '80%'
-    },
-    userBubble: {
-        backgroundColor: '#6200ee',
-        alignSelf: 'flex-end',
-        borderBottomRightRadius: 2
-    },
-    botBubble: {
-        backgroundColor: 'white',
-        alignSelf: 'flex-start',
-        borderBottomLeftRadius: 2
-    },
-    msgText: {
-        color: '#333' // will be white for user
-    },
-    inputArea: {
-        flexDirection: 'row',
-        padding: 12,
-        backgroundColor: 'white',
-        borderTopWidth: 1,
-        borderTopColor: '#eee'
-    },
-    chatInput: {
-        flex: 1,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        marginRight: 8
-    },
-    sendBtn: {
-        backgroundColor: '#6200ee',
-        borderRadius: 20,
-        paddingHorizontal: 20,
-        justifyContent: 'center'
-    }
 });
 
-// New Component
-import { COLORS, FONTS, globalStyles } from '../../theme';
+
+// ScriptedRoleplaySlide Component
 
 export const ScriptedRoleplaySlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     const [input, setInput] = useState('');

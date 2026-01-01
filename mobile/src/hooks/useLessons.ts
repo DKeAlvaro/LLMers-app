@@ -8,20 +8,6 @@ export const useLessons = () => {
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
 
-    const DEMO_LESSON: Lesson = {
-        id: 'demo_roleplay',
-        title: 'Feature Preview: Roleplay',
-        description: 'Test the new AI Roleplay feature.',
-        content: [
-            {
-                type: 'scripted_roleplay',
-                setting: 'Cafe Interaction',
-                bot_line: 'Goedemorgen! Wat wil je drinken?',
-                expected_concept: 'coffee',
-                system_prompt: 'User must order coffee using the Dutch word "koffie".'
-            }
-        ]
-    };
 
     useEffect(() => {
         loadLessons();
@@ -80,7 +66,7 @@ export const useLessons = () => {
                 return getNum(a.id) - getNum(b.id);
             });
 
-            setLessons([DEMO_LESSON, ...loadedLessons]);
+            setLessons(loadedLessons);
         } catch (e) {
             console.error("Error loading lessons from", path, e);
         }
