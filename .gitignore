@@ -2,9 +2,11 @@
 .trae
 .env
 /build
-*json
+# *json (ignore json files)
 /web
 summary.md
 lessons/
 secret/
 create_video.py
+*node_modules
+*.expo
