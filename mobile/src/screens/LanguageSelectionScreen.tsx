@@ -60,7 +60,7 @@ export const LanguageSelectionScreen = () => {
     return (
         <SafeAreaView style={globalStyles.container}>
             <View style={localStyles.header}>
-                <Text style={globalStyles.title}>Elearn</Text>
+                <Text style={globalStyles.title}>llmers</Text>
                 <Text style={globalStyles.subtitle}>Select a course to download to your device.</Text>
             </View>
 

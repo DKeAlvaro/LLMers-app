@@ -42,7 +42,7 @@ export const HomeScreen = () => {
     return (
         <SafeAreaView style={globalStyles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Elearn</Text>
+                <Text style={styles.headerTitle}>llmers</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
                     <Text style={styles.settingsLink}>Settings</Text>
                 </TouchableOpacity>

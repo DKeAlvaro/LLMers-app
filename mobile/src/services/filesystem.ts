@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 
-const ROOT_DIR = (FileSystem.documentDirectory || '') + 'elearn/';
+const ROOT_DIR = (FileSystem.documentDirectory || '') + 'llmers/';
 const LESSONS_DIR = ROOT_DIR + 'lessons/';
 const LANGUAGES_DIR = ROOT_DIR + 'app_languages/';
 

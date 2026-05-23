@@ -23,7 +23,10 @@ export const StorageService = {
     async getSettings(): Promise<AppSettings> {
         try {
             const jsonValue = await AsyncStorage.getItem(KEYS.SETTINGS);
-            return jsonValue != null ? { ...DEFAULT_SETTINGS, ...JSON.parse(jsonValue) } : DEFAULT_SETTINGS;
+            if (jsonValue == null) return DEFAULT_SETTINGS;
+            const parsed = JSON.parse(jsonValue);
+            if (!parsed || typeof parsed !== 'object') return DEFAULT_SETTINGS;
+            return { ...DEFAULT_SETTINGS, ...parsed };
         } catch (e) {
             console.error('Error reading settings', e);
             return DEFAULT_SETTINGS;
@@ -41,7 +44,10 @@ export const StorageService = {
     async getProgress(): Promise<UserProgress> {
         try {
             const jsonValue = await AsyncStorage.getItem(KEYS.PROGRESS);
-            return jsonValue != null ? { ...DEFAULT_PROGRESS, ...JSON.parse(jsonValue) } : DEFAULT_PROGRESS;
+            if (jsonValue == null) return DEFAULT_PROGRESS;
+            const parsed = JSON.parse(jsonValue);
+            if (!parsed || typeof parsed !== 'object') return DEFAULT_PROGRESS;
+            return { ...DEFAULT_PROGRESS, ...parsed };
         } catch (e) {
             console.error('Error reading progress', e);
             return DEFAULT_PROGRESS;
@@ -59,7 +65,9 @@ export const StorageService = {
     async getAppData(key: string, defaultValue: any = null): Promise<any> {
         try {
             const jsonValue = await AsyncStorage.getItem(KEYS.APP_DATA);
-            const data = jsonValue != null ? JSON.parse(jsonValue) : {};
+            if (jsonValue == null) return defaultValue;
+            const data = JSON.parse(jsonValue);
+            if (!data || typeof data !== 'object') return defaultValue;
             return data[key] !== undefined ? data[key] : defaultValue;
         } catch (e) {
             console.error('Error reading app data', e);

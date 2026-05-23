@@ -4,13 +4,23 @@ import { SlideContent } from '../../types';
 
 export const VocabularySlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     // data.data is { "word": "translation" }
-    const entries = Object.entries((data.data || {}) as Record<string, string>);
-    const [word, translation] = entries[0] || ["", ""];
+    if (!data?.data || typeof data.data !== 'object') {
+        return (
+            <View style={styles.center}>
+                <Text style={styles.title}>No vocabulary</Text>
+            </View>
+        );
+    }
+    const entries = Object.entries(data.data as Record<string, string>);
 
     return (
         <View style={styles.center}>
-            <Text style={styles.title}>{word}</Text>
-            <Text style={styles.translation}>{translation}</Text>
+            {entries.map(([word, translation], i) => (
+                <View key={`vocab-${i}`} style={styles.vocabRow}>
+                    <Text style={styles.title}>{word}</Text>
+                    <Text style={styles.translation}>{translation}</Text>
+                </View>
+            ))}
         </View>
     );
 };
@@ -50,6 +60,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
+    },
+    vocabRow: {
+        marginBottom: 24,
+        alignItems: 'center',
     },
     title: {
         fontSize: 32,

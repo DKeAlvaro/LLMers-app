@@ -1,0 +1,262 @@
+{
+  "id": "L1N",
+  "title": "The Haringkraam Ritual",
+  "content": [
+    {
+      "type": "tip",
+      "text": "Welcome! In this lesson, you'll learn how to order 'haring', a famous Dutch snack, from a fish stand ('haringkraam'). Let's get started!"
+    },
+    {
+      "type": "vocabulary",
+      
+      "data": {
+        "De haringkraam": "The herring stand",
+        "De haring": "The herring",
+        "Het broodje": "The sandwich / roll",
+        "De uitjes": "The onions"
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Goedendag",
+        "meaning": "Good day"
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Ik wil graag een broodje haring.",
+        "meaning": "I would like a herring sandwich."
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "met uitjes",
+        "meaning": "with onions"
+      }
+    },
+    {
+      "type": "interactive_scenario",
+      "scenario_id": "L1N_S01",
+      "title": "Phase 1: The Initial Order",
+      "setting": "You are at a bustling fish stand ('haringkraam') and want to order for the first time.",
+      "conversation_flow": [
+        {
+          "title": "Place your order",
+          "chatbot_message": "Goedendag! Zeg het maar.",
+          "translation": "Good day! How can I help you?"
+        },
+        {
+          "title": "Add onions",
+          "chatbot_message": "Een broodje haring. Wilt u er uitjes bij?",
+          "translation": "A herring sandwich. Would you like onions with that?"
+        },
+        {
+          "title": "Receive confirmation",
+          "chatbot_message": "Komt voor elkaar. Een broodje haring met uitjes.",
+          "translation": "Coming right up. A herring sandwich with onions."
+        }
+      ]
+    },
+    {
+      "type": "vocabulary",
+      
+      "data": {
+        "Het zuur": "The pickles",
+        "In stukjes": "In pieces"
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Nee, bedankt.",
+        "meaning": "No, thank you."
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Kunt u het in stukjes snijden?",
+        "meaning": "Can you cut it into pieces?"
+      }
+    },
+    {
+      "type": "interactive_scenario",
+      "scenario_id": "L1N_S02",
+      "title": "Phase 2: Customization",
+      "setting": "The vendor asks if you want another common topping.",
+      "conversation_flow": [
+        {
+          "title": "Reply about pickles",
+          "chatbot_message": "Wilt u er ook zuur bij?",
+          "translation": "Would you like pickles with that too?"
+        },
+        {
+          "title": "Make a special request",
+          "chatbot_message": "Oké, geen zuur. Anders nog iets?",
+          "translation": "Okay, no pickles. Anything else?"
+        },
+        {
+          "title": "Receive confirmation",
+          "chatbot_message": "Natuurlijk, geen probleem. Ik snijd hem voor u.",
+          "translation": "Of course, no problem. I'll cut it for you."
+        }
+      ]
+    },
+    {
+      "type": "vocabulary",
+      
+      "data": {
+        "Pinnen": "To pay by card (verb)"
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Hoeveel is het?",
+        "meaning": "How much is it?"
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Kan ik pinnen?",
+        "meaning": "Can I pay by card?"
+      }
+    },
+    {
+      "type": "interactive_scenario",
+      "scenario_id": "L1N_S03",
+      "title": "Phase 3: The Payment Problem",
+      "setting": "Your herring is ready. Now it's time to pay.",
+      "conversation_flow": [
+        {
+          "title": "Ask for the price",
+          "chatbot_message": "Alstublieft, uw broodje haring.",
+          "translation": "Here you go, your herring sandwich."
+        },
+        {
+          "title": "Ask to pay by card",
+          "chatbot_message": "Dat is vier euro, alstublieft.",
+          "translation": "That is four euros, please."
+        },
+        {
+          "title": "Hear the bad news",
+          "chatbot_message": "Oh, sorry. Vandaag even niet.",
+          "translation": "Oh, sorry. Not today (no card payments today)."
+        }
+      ]
+    },
+    {
+      "type": "vocabulary",
+      
+      "data": {
+        "Het pinapparaat": "The card machine",
+        "Kapot": "Broken",
+        "Het wisselgeld": "The change (money)"
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Ik heb alleen een briefje van 50.",
+        "meaning": "I only have a 50 euro note."
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Heeft u wisselgeld?",
+        "meaning": "Do you have change?"
+      }
+    },
+    {
+      "type": "interactive_scenario",
+      "scenario_id": "L1N_S04",
+      "title": "Phase 4: Negotiation & Solution",
+      "setting": "The card machine is broken. You need to find another way to pay.",
+      "conversation_flow": [
+        {
+          "title": "State your problem",
+          "chatbot_message": "Het pinapparaat is kapot.",
+          "translation": "The card machine is broken."
+        },
+        {
+          "title": "Ask about change",
+          "chatbot_message": "Oei, 50 euro... dat is veel.",
+          "translation": "Oops, 50 euros... that's a lot."
+        },
+        {
+          "title": "Get a positive response",
+          "chatbot_message": "Even kijken... Ja, dat moet lukken.",
+          "translation": "Let's see... Yes, that should work."
+        }
+      ]
+    },
+    {
+      "type": "vocabulary",
+      
+      "data": {
+        "Contant": "Cash (adverb)"
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Oké, prima.",
+        "meaning": "Okay, fine."
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Dan betaal ik contant.",
+        "meaning": "Then I'll pay with cash."
+      }
+    },
+    {
+      "type": "expression",
+      
+      "data": {
+        "phrase": "Dank u wel.",
+        "meaning": "Thank you (formal)."
+      }
+    },
+    {
+      "type": "interactive_scenario",
+      "scenario_id": "L1N_S05",
+      "title": "Phase 5: Transaction Completion",
+      "setting": "You've found a solution. Time to complete the purchase.",
+      "conversation_flow": [
+        {
+          "title": "Acknowledge the solution",
+          "chatbot_message": "Ik heb wisselgeld voor 50 euro.",
+          "translation": "I have change for 50 euros."
+        },
+        {
+          "title": "State you will pay cash",
+          "chatbot_message": "Mooi.",
+          "translation": "Great."
+        },
+        {
+          "title": "Say thank you",
+          "chatbot_message": "Dank u wel. Hier is 46 euro terug en uw broodje. Eet smakelijk!",
+          "translation": "Thank you. Here is 46 euros back and your sandwich. Enjoy your meal!"
+        }
+      ]
+    }
+  ]
+}

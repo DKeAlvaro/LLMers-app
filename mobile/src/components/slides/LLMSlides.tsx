@@ -54,19 +54,39 @@ export const LLMCheckSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     );
 };
 
+
+
 export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     const conversationFlow = data.conversation_flow || [];
     const [currentStep, setCurrentStep] = useState(0);
-    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([]);
+    const [messages, setMessages] = useState<{ role: 'user' | 'assistant', content: string, translation?: string }[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [initialized, setInitialized] = useState(false);
+
+    // Translation state
+    const [translation, setTranslation] = useState<{ original: string, translated: string } | null>(null);
 
     // Initialize with the first bot message from conversation_flow
     React.useEffect(() => {
-        if (conversationFlow.length > 0 && messages.length === 0) {
-            setMessages([{ role: 'assistant', content: conversationFlow[0].chatbot_message }]);
+        if (conversationFlow.length > 0 && !initialized) {
+            setMessages([{
+                role: 'assistant',
+                content: conversationFlow[0].chatbot_message,
+                translation: conversationFlow[0].translation
+            }]);
+            setInitialized(true);
         }
-    }, [conversationFlow]);
+    }, [conversationFlow.length > 0 && conversationFlow[0]?.chatbot_message, initialized]);
+
+    const handleSentenceClick = (sentence: string, translationText?: string) => {
+        if (!translationText) return;
+
+        setTranslation({ original: sentence, translated: translationText });
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => setTranslation(null), 5000);
+    };
 
     const handleSend = async () => {
         if (!input.trim()) return;
@@ -75,6 +95,7 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
         setInput('');
         setLoading(true);
+        setTranslation(null); // Clear translation on new action
 
         try {
             const history = messages.map(m => ({ role: m.role, content: m.content }));
@@ -85,11 +106,26 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
             const response = await LLMService.chatCompletion([systemMsg, ...history], 150);
             const cleanResponse = response.replace(/CONCEPTS_COVERED:.*?(\n|$)/g, '').trim();
 
-            setMessages(prev => [...prev, { role: 'assistant', content: cleanResponse }]);
-
+            // Try to find translation for the NEXT step (since we are about to increment)
+            // But wait, currentStep is the OLD step. We need translation for the NEW step.
+            // If we successfully advanced...
+            let nextTranslation: string | undefined = undefined;
             if (currentStep < conversationFlow.length - 1) {
+                // We assume the LLM just spoke the line for the next step?
+                // Or does it speak for the CURRENT step's response?
+                // conversationFlow structure: [Msg1, Msg2, Msg3]
+                // Msg1 is initial.
+                // User replies. LLM replies (Msg2?).
+                // So index is currentStep + 1.
+                nextTranslation = conversationFlow[currentStep + 1]?.translation;
                 setCurrentStep(prev => prev + 1);
             }
+
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: cleanResponse,
+                translation: nextTranslation
+            }]);
         } catch (e) {
             setMessages(prev => [...prev, { role: 'assistant', content: "..." }]);
         } finally {
@@ -99,11 +135,27 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
 
     const currentHint = conversationFlow[currentStep]?.title || '';
 
+    const renderMessageContent = (m: { role: 'user' | 'assistant', content: string, translation?: string }) => {
+        if (m.role === 'user') {
+            return <Text style={[chatStyles.dialogueText, chatStyles.yourDialogue]}>"{m.content}"</Text>;
+        }
+
+        return (
+            <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => handleSentenceClick(m.content, m.translation)}
+                style={{ flexDirection: 'row', flexWrap: 'wrap', paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: '#E0D8C8' }}
+            >
+                <Text style={chatStyles.dialogueText}>"{m.content}"</Text>
+            </TouchableOpacity>
+        );
+    };
+
     return (
         <KeyboardAvoidingView
             style={chatStyles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={100}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
         >
             {/* Narrative header */}
             <View style={chatStyles.chapterHeader}>
@@ -111,6 +163,15 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
                 <Text style={chatStyles.chapterTitle}>{data.title}</Text>
                 <Text style={chatStyles.settingText}>{data.setting}</Text>
             </View>
+
+            {/* Translation Popover / Float */}
+            {translation && (
+                <View style={chatStyles.translationFloat}>
+                    <Text style={chatStyles.translationOriginal}>{translation.original}</Text>
+                    <Text style={chatStyles.translationArrow}>→</Text>
+                    <Text style={chatStyles.translationResult}>{translation.translated}</Text>
+                </View>
+            )}
 
             {/* Conversation as screenplay/script format */}
             <ScrollView
@@ -122,12 +183,7 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
                         <Text style={chatStyles.speakerName}>
                             {m.role === 'assistant' ? 'Vendor' : 'You'}
                         </Text>
-                        <Text style={[
-                            chatStyles.dialogueText,
-                            m.role === 'user' && chatStyles.yourDialogue
-                        ]}>
-                            "{m.content}"
-                        </Text>
+                        {renderMessageContent(m)}
                     </View>
                 ))}
 
@@ -171,6 +227,40 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
 
 // Immersive chat styles - storybook/screenplay aesthetic
 const chatStyles = StyleSheet.create({
+    translationFloat: {
+        position: 'absolute',
+        top: 110, // Below header
+        alignSelf: 'center',
+        backgroundColor: '#2C2416',
+        borderRadius: 20,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        zIndex: 100,
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    translationOriginal: {
+        color: '#A09080',
+        fontFamily: FONTS.serif,
+        fontStyle: 'italic',
+        fontSize: 14,
+    },
+    translationArrow: {
+        color: '#666',
+        marginHorizontal: 8,
+        fontSize: 12,
+    },
+    translationResult: {
+        color: '#FFF',
+        fontFamily: FONTS.sans,
+        fontWeight: 'bold',
+        fontSize: 14,
+    },
     container: {
         flex: 1,
         backgroundColor: '#FAF8F3', // Warm paper
@@ -228,13 +318,12 @@ const chatStyles = StyleSheet.create({
         fontFamily: FONTS.serif,
         color: '#2C2416',
         lineHeight: 26,
-        paddingLeft: 12,
-        borderLeftWidth: 2,
-        borderLeftColor: '#E0D8C8',
     },
     yourDialogue: {
         color: '#1A4A3A', // Darker green for your words
         borderLeftColor: '#A8C4A0',
+        paddingLeft: 12,
+        borderLeftWidth: 2,
     },
     thinkingText: {
         fontSize: 16,
