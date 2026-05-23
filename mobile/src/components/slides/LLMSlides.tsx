@@ -92,6 +92,7 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
     const [loading, setLoading] = useState(false);
     const [initialized, setInitialized] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
+    const scrollRef = useRef<ScrollView>(null);
     const [extractedVars, setExtractedVars] = useState<Record<string, string>>({});
     const [feedback, setFeedback] = useState<string | null>(null);
     const [translation, setTranslation] = useState<{
@@ -286,8 +287,8 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
     return (
         <KeyboardAvoidingView
             style={chatStyles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+            behavior="padding"
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         >
             {/* Header */}
             <View style={chatStyles.header}>
@@ -317,8 +318,11 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
 
             {/* Messages */}
             <ScrollView
+                ref={scrollRef}
                 style={chatStyles.scroll}
                 contentContainerStyle={chatStyles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
             >
                 {messages.map(renderMessage)}
                 {loading && (
