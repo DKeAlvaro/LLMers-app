@@ -22,6 +22,13 @@ export const LLMCheckSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     const [answer, setAnswer] = useState('');
     const [feedback, setFeedback] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [kbHeight, setKbHeight] = useState(0);
+
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', (e) => setKbHeight(e.endCoordinates.height));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKbHeight(0));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
 
     const handleCheck = async () => {
         if (!answer.trim()) return;
@@ -47,7 +54,7 @@ export const LLMCheckSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     };
 
     return (
-        <ScrollView contentContainerStyle={llmStyles.container}>
+        <ScrollView contentContainerStyle={[llmStyles.container, { paddingBottom: 24 + kbHeight }]}>
             <Text style={llmStyles.question}>{data.chatbot_message}</Text>
             <TextInput
                 style={llmStyles.input}
@@ -120,7 +127,8 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
     // Keyboard handling
     useEffect(() => {
         const show = Keyboard.addListener('keyboardDidShow', (e) => {
-            setKeyboardHeight(e.endCoordinates.height);
+            // Use 2/3 of keyboard height as offset to position input above keyboard
+            setKeyboardHeight(Math.round(e.endCoordinates.height * 0.66));
             setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
         });
         const hide = Keyboard.addListener('keyboardDidHide', () => {
@@ -331,10 +339,7 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
             <ScrollView
                 ref={scrollRef}
                 style={chatStyles.scroll}
-                contentContainerStyle={[
-                    chatStyles.scrollContent,
-                    { paddingBottom: 8 + keyboardHeight },
-                ]}
+                contentContainerStyle={chatStyles.scrollContent}
                 keyboardShouldPersistTaps="handled"
                 onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
             >
@@ -349,9 +354,9 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
                 )}
             </ScrollView>
 
-            {/* Input */}
+            {/* Input - absolutely positioned, pushed up by keyboard */}
             {!isComplete && (
-                <View style={chatStyles.inputBar}>
+                <View style={[chatStyles.inputBar, { position: 'absolute', left: 0, right: 0, bottom: keyboardHeight, zIndex: 10 }]}>
                     {currentHint ? (
                         <Text style={chatStyles.hint}>{currentHint}</Text>
                     ) : null}
@@ -379,9 +384,9 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
                 </View>
             )}
 
-            {/* Complete footer */}
+            {/* Complete footer - absolutely positioned, pushed up by keyboard */}
             {isComplete && (
-                <View style={chatStyles.doneBar}>
+                <View style={[chatStyles.doneBar, { position: 'absolute', left: 0, right: 0, bottom: keyboardHeight, zIndex: 10 }]}>
                     <Text style={chatStyles.doneText}>Complete</Text>
                 </View>
             )}
@@ -397,6 +402,13 @@ export const ScriptedRoleplaySlide: React.FC<{ data: SlideContent }> = ({ data }
     const [input, setInput] = useState('');
     const [status, setStatus] = useState<'idle' | 'checking' | 'pass' | 'fail'>('idle');
     const [feedback, setFeedback] = useState<string | null>(null);
+    const [kbHeight, setKbHeight] = useState(0);
+
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', (e) => setKbHeight(e.endCoordinates.height));
+        const hide = Keyboard.addListener('keyboardDidHide', () => setKbHeight(0));
+        return () => { show.remove(); hide.remove(); };
+    }, []);
 
     const handleCheck = async () => {
         if (!input.trim()) return;
@@ -440,7 +452,7 @@ export const ScriptedRoleplaySlide: React.FC<{ data: SlideContent }> = ({ data }
 
     return (
         <ScrollView
-            contentContainerStyle={{ padding: 24, paddingBottom: 60 }}
+            contentContainerStyle={{ padding: 24, paddingBottom: 60 + kbHeight }}
             keyboardShouldPersistTaps="handled"
         >
             <Text style={srStyles.title}>{data.setting || 'Roleplay'}</Text>
@@ -630,7 +642,7 @@ const chatStyles = StyleSheet.create({
     },
     scrollContent: {
         padding: 16,
-        paddingBottom: 8,
+        paddingBottom: 100,
     },
     msgRow: {
         marginBottom: 14,

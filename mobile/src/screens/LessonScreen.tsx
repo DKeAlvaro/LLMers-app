@@ -106,7 +106,7 @@ export const LessonScreen = () => {
                 <SlideRenderer slide={currentSlide} />
             </View>
 
-            {/* Bottom navigation — stays fixed, hidden by keyboard */}
+            {/* Bottom navigation */}
             <View style={styles.bottomBar}>
                 <TouchableOpacity
                     style={[styles.navBtn, styles.prevBtn, isFirst && styles.navBtnDisabled]}
