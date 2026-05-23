@@ -9,6 +9,7 @@ export const useLessons = () => {
     const { settings, progress } = useApp();
     const [lessons, setLessons] = useState<Lesson[]>([]);
     const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+    const [needsRedownload, setNeedsRedownload] = useState(false);
 
     useEffect(() => {
         console.log(`${LOG_PREFIX} useEffect triggered: selected_language="${settings.selected_language}"`);
@@ -59,6 +60,7 @@ export const useLessons = () => {
             console.log(`${LOG_PREFIX} loadLessons: files in ${path} =`, files);
 
             const loadedLessons: Lesson[] = [];
+            let skippedCount = 0;
 
             for (const file of files) {
                 if (file.endsWith('.json')) {
@@ -66,15 +68,39 @@ export const useLessons = () => {
                     if (content) {
                         try {
                             const lessonData = JSON.parse(content);
+
+                            // Validate required fields
+                            if (!lessonData.id || !lessonData.content || !Array.isArray(lessonData.content)) {
+                                console.warn(
+                                    `${LOG_PREFIX} loadLessons: SKIPPING ${file} — missing required fields.`,
+                                    `id=${lessonData.id} hasContent=${!!lessonData.content} hasSlides=${!!lessonData.slides}`
+                                );
+                                console.warn(
+                                    `${LOG_PREFIX} loadLessons: This file might be in the OLD format (lesson_id/slides).`
+                                );
+                                skippedCount++;
+                                continue;
+                            }
+
                             console.log(`${LOG_PREFIX} loadLessons: parsed ${file} id=${lessonData.id} title="${lessonData.title}" slides=${lessonData.content?.length}`);
                             loadedLessons.push(lessonData);
                         } catch (e) {
                             console.error(`${LOG_PREFIX} loadLessons: JSON parse FAIL for ${file}`, e);
+                            skippedCount++;
                         }
                     } else {
                         console.warn(`${LOG_PREFIX} loadLessons: empty content for ${file}`);
+                        skippedCount++;
                     }
                 }
+            }
+
+            // If files exist but ALL were skipped (old format), flag for re-download
+            if (files.length > 0 && loadedLessons.length === 0 && skippedCount > 0) {
+                console.warn(`${LOG_PREFIX} loadLessons: ⚠️ All ${skippedCount} lesson files are in old format. Needs re-download.`);
+                setNeedsRedownload(true);
+            } else {
+                setNeedsRedownload(false);
             }
 
             // Sort lessons by numeric ID
@@ -94,5 +120,5 @@ export const useLessons = () => {
         }
     };
 
-    return { lessons, loadLessons };
+    return { lessons, loadLessons, needsRedownload };
 };

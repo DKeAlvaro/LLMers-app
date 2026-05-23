@@ -10,7 +10,7 @@ const LOG_PREFIX = '[HOME]';
 
 export const HomeScreen = () => {
     const navigation = useNavigation<any>();
-    const { lessons } = useLessons();
+    const { lessons, needsRedownload } = useLessons();
     const { progress, settings, setIsFirstRun } = useApp();
 
     console.log(`${LOG_PREFIX} render: lessons=${lessons.length} lang="${settings.selected_language}"`);
@@ -43,23 +43,46 @@ export const HomeScreen = () => {
         );
     };
 
-    const renderEmpty = () => (
-        <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>No lessons found</Text>
-            <Text style={styles.emptySubtitle}>
-                Lesson data has not been downloaded yet, or was cleared when the cache was reset.
-            </Text>
-            <TouchableOpacity
-                style={[globalStyles.button, { marginTop: 24 }]}
-                onPress={async () => {
-                    console.log(`${LOG_PREFIX} re-download requested`);
-                    await setIsFirstRun(true);
-                }}
-            >
-                <Text style={globalStyles.buttonText}>DOWNLOAD LESSONS</Text>
-            </TouchableOpacity>
-        </View>
-    );
+    const renderEmpty = () => {
+        if (needsRedownload) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyTitle}>⚠️ Outdated lesson format</Text>
+                    <Text style={styles.emptySubtitle}>
+                        The lessons on this device use an old format that is no longer supported.
+                        Re-download to get the latest versions.
+                    </Text>
+                    <TouchableOpacity
+                        style={[globalStyles.button, { marginTop: 24, backgroundColor: COLORS.secondary }]}
+                        onPress={async () => {
+                            console.log(`${LOG_PREFIX} re-download requested (old format detected)`);
+                            await setIsFirstRun(true);
+                        }}
+                    >
+                        <Text style={globalStyles.buttonText}>RE-DOWNLOAD LESSONS</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        return (
+            <View style={styles.emptyContainer}>
+                <Text style={styles.emptyTitle}>No lessons found</Text>
+                <Text style={styles.emptySubtitle}>
+                    Lesson data has not been downloaded yet, or was cleared when the cache was reset.
+                </Text>
+                <TouchableOpacity
+                    style={[globalStyles.button, { marginTop: 24 }]}
+                    onPress={async () => {
+                        console.log(`${LOG_PREFIX} re-download requested`);
+                        await setIsFirstRun(true);
+                    }}
+                >
+                    <Text style={globalStyles.buttonText}>DOWNLOAD LESSONS</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
 
     return (
         <SafeAreaView style={globalStyles.container}>
