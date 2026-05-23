@@ -19,24 +19,30 @@ export const LanguageSelectionScreen = () => {
 
     const loadLanguages = async () => {
         setLoading(true);
+        console.log('[SETUP] loadLanguages: fetching catalog...');
         const { target_languages } = await GitHubService.getAvailableLanguages();
+        console.log('[SETUP] loadLanguages: got', target_languages);
         setTargetLanguages(target_languages);
         setLoading(false);
     };
 
     const handleDownload = async () => {
         if (!selectedLang) return;
+        console.log(`[SETUP] handleDownload: downloading ${selectedLang}...`);
 
         setDownloading(true);
         try {
             await GitHubService.downloadLanguageFiles('en', selectedLang);
+            console.log('[SETUP] handleDownload: download complete');
 
             const newSettings: AppSettings = {
                 deepseek_api_key: null,
                 selected_language: `en-${selectedLang}`
             };
+            console.log(`[SETUP] handleDownload: saving settings lang=${newSettings.selected_language}`);
             await setSettings(newSettings);
             await setIsFirstRun(false);
+            console.log('[SETUP] handleDownload: done, navigating to Home');
 
         } catch (e) {
             console.error(e);

@@ -27,6 +27,7 @@ export interface SlideContent {
         title: string;
         chatbot_message: string;
         translation?: string;
+        extract_info?: Record<string, string>;
     }[]; // Interactive scenario steps
 }
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SlideContent } from '../../types';
+import { substituteVars, getTargetLangName } from '../../services/utils';
 
 export const VocabularySlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     // data.data is { "word": "translation" }
@@ -44,10 +45,12 @@ export const GrammarSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
 };
 
 export const TipSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
+    const langName = getTargetLangName();
+    const text = substituteVars(data.text || '', { TARGET_LANG: langName });
     return (
         <View style={styles.center}>
             <Text style={styles.icon}>💡</Text>
-            <Text style={styles.body}>{data.text}</Text>
+            <Text style={styles.body}>{text}</Text>
         </View>
     );
 };

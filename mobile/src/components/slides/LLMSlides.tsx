@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { SlideContent } from '../../types';
 import { LLMService } from '../../api/llm';
+import { substituteVars, extractJson } from '../../services/utils';
 import { COLORS, FONTS, globalStyles } from '../../theme';
 
 export const LLMCheckSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
@@ -63,16 +64,20 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [initialized, setInitialized] = useState(false);
+    const [isComplete, setIsComplete] = useState(false);
+    const [extractedVars, setExtractedVars] = useState<Record<string, string>>({});
+    const [feedback, setFeedback] = useState<string | null>(null);
 
-    // Translation state
+    // Translation popover state
     const [translation, setTranslation] = useState<{ original: string, translated: string } | null>(null);
 
     // Initialize with the first bot message from conversation_flow
     React.useEffect(() => {
         if (conversationFlow.length > 0 && !initialized) {
+            const firstMsg = substituteVars(conversationFlow[0].chatbot_message, extractedVars);
             setMessages([{
                 role: 'assistant',
-                content: conversationFlow[0].chatbot_message,
+                content: firstMsg,
                 translation: conversationFlow[0].translation
             }]);
             setInitialized(true);
@@ -81,72 +86,142 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
 
     const handleSentenceClick = (sentence: string, translationText?: string) => {
         if (!translationText) return;
-
         setTranslation({ original: sentence, translated: translationText });
-
-        // Auto-hide after 5 seconds
         setTimeout(() => setTranslation(null), 5000);
     };
 
     const handleSend = async () => {
-        if (!input.trim()) return;
+        if (!input.trim() || loading || isComplete) return;
 
-        const userMsg = input;
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        const userMsg = input.trim();
         setInput('');
+        setFeedback(null);
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
         setLoading(true);
-        setTranslation(null); // Clear translation on new action
+        setTranslation(null);
+
+        const step = conversationFlow[currentStep];
+        if (!step) {
+            setLoading(false);
+            return;
+        }
 
         try {
-            const history = messages.map(m => ({ role: m.role, content: m.content }));
-            history.push({ role: 'user', content: userMsg });
+            // Step 1: If this step has extract_info, extract it from the user's message
+            let newVars = { ...extractedVars };
+            if (step.extract_info) {
+                const instructionLines = Object.entries(step.extract_info)
+                    .map(([key, desc]) => `- ${key}: ${desc}`)
+                    .join('\n');
 
-            const systemMsg = { role: 'system' as const, content: `Roleplay: ${data.setting}. Goal: Have a conversation.` };
+                const extractMessages = [
+                    {
+                        role: 'system' as const,
+                        content: 'You are an information extraction assistant learning Dutch. Extract the requested information from the user\'s message. Respond with ONLY a JSON object. If you cannot extract a value, use null.'
+                    },
+                    {
+                        role: 'user' as const,
+                        content: `Extract the following from the user\'s message:\n${instructionLines}\n\nUser message: "${userMsg}"\n\nRespond with JSON.`
+                    }
+                ];
 
-            const response = await LLMService.chatCompletion([systemMsg, ...history], 150);
-            const cleanResponse = response.replace(/CONCEPTS_COVERED:.*?(\n|$)/g, '').trim();
-
-            // Try to find translation for the NEXT step (since we are about to increment)
-            // But wait, currentStep is the OLD step. We need translation for the NEW step.
-            // If we successfully advanced...
-            let nextTranslation: string | undefined = undefined;
-            if (currentStep < conversationFlow.length - 1) {
-                // We assume the LLM just spoke the line for the next step?
-                // Or does it speak for the CURRENT step's response?
-                // conversationFlow structure: [Msg1, Msg2, Msg3]
-                // Msg1 is initial.
-                // User replies. LLM replies (Msg2?).
-                // So index is currentStep + 1.
-                nextTranslation = conversationFlow[currentStep + 1]?.translation;
-                setCurrentStep(prev => prev + 1);
+                try {
+                    const extractResult = await LLMService.chatCompletion(extractMessages, 100);
+                    const parsed = extractJson(extractResult);
+                    if (parsed && typeof parsed === 'object') {
+                        // Only store non-null values
+                        const cleaned: Record<string, string> = {};
+                        for (const [k, v] of Object.entries(parsed)) {
+                            if (v !== null && v !== undefined) cleaned[k] = String(v);
+                        }
+                        newVars = { ...newVars, ...cleaned };
+                        setExtractedVars(newVars);
+                    }
+                } catch {
+                    // Extraction failed silently; continue with existing vars
+                }
             }
 
+            // Step 2: Evaluate if the user's response is appropriate
+            const evaluated = await LLMService.chatCompletion([
+                {
+                    role: 'system' as const,
+                    content: `You are a friendly language tutor evaluating a student's response in a Dutch conversation. The scenario: "${data.setting}". Your task: the student should have: "${step.title}". Evaluate whether their response makes conversational sense. Be encouraging. The student is a beginner so be lenient. Respond with JSON: {"acceptable": true, "feedback": "encouraging message"} or {"acceptable": false, "feedback": "gentle hint on what to improve"}`
+                },
+                {
+                    role: 'user' as const,
+                    content: `The bot said: "${step.chatbot_message}"\nExpected action: "${step.title}"\nStudent replied: "${userMsg}"\n\nIs this acceptable?`
+                }
+            ], 150);
+
+            const evaluation = extractJson(evaluated);
+            const acceptable = evaluation?.acceptable !== false;
+
+            if (acceptable) {
+                // Advance to next step or complete
+                if (currentStep < conversationFlow.length - 1) {
+                    const nextIdx = currentStep + 1;
+                    const nextStep = conversationFlow[nextIdx];
+                    const nextMsg = substituteVars(nextStep.chatbot_message, newVars);
+                    setCurrentStep(nextIdx);
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: nextMsg,
+                        translation: nextStep.translation
+                    }]);
+                } else {
+                    setIsComplete(true);
+                    setMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: '✅ Well done! You completed this conversation.'
+                    }]);
+                }
+                // Show positive feedback as a brief toast
+                if (evaluation?.feedback) {
+                    setFeedback(evaluation.feedback);
+                    setTimeout(() => setFeedback(null), 3000);
+                }
+            } else {
+                // Don't advance — show feedback and let user retry
+                const retryMsg = evaluation?.feedback || 'Almost! Try again with a response that fits the conversation.';
+                setMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: `💬 ${retryMsg}`
+                }]);
+            }
+        } catch (e) {
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: cleanResponse,
-                translation: nextTranslation
+                content: 'Sorry, something went wrong. Please try again.'
             }]);
-        } catch (e) {
-            setMessages(prev => [...prev, { role: 'assistant', content: "..." }]);
         } finally {
             setLoading(false);
         }
     };
 
-    const currentHint = conversationFlow[currentStep]?.title || '';
+    const currentHint = !isComplete ? conversationFlow[currentStep]?.title || '' : '';
 
     const renderMessageContent = (m: { role: 'user' | 'assistant', content: string, translation?: string }) => {
         if (m.role === 'user') {
             return <Text style={[chatStyles.dialogueText, chatStyles.yourDialogue]}>"{m.content}"</Text>;
         }
 
+        const isFeedback = m.content.startsWith('💬') || m.content.startsWith('✅');
         return (
             <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => handleSentenceClick(m.content, m.translation)}
-                style={{ flexDirection: 'row', flexWrap: 'wrap', paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: '#E0D8C8' }}
+                activeOpacity={m.translation ? 0.7 : 1}
+                onPress={() => m.translation ? handleSentenceClick(m.content, m.translation) : undefined}
+                style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    paddingLeft: isFeedback ? 0 : 12,
+                    borderLeftWidth: isFeedback ? 0 : 2,
+                    borderLeftColor: isFeedback ? 'transparent' : '#E0D8C8'
+                }}
             >
-                <Text style={chatStyles.dialogueText}>"{m.content}"</Text>
+                <Text style={[chatStyles.dialogueText, isFeedback && chatStyles.feedbackText]}>
+                    {m.content.startsWith('💬') || m.content.startsWith('✅') ? m.content : `"${m.content}"`}
+                </Text>
             </TouchableOpacity>
         );
     };
@@ -164,7 +239,14 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
                 <Text style={chatStyles.settingText}>{data.setting}</Text>
             </View>
 
-            {/* Translation Popover / Float */}
+            {/* Feedback toast */}
+            {feedback && (
+                <View style={chatStyles.feedbackToast}>
+                    <Text style={chatStyles.feedbackToastText}>{feedback}</Text>
+                </View>
+            )}
+
+            {/* Translation Popover */}
             {translation && (
                 <View style={chatStyles.translationFloat}>
                     <Text style={chatStyles.translationOriginal}>{translation.original}</Text>
@@ -173,15 +255,20 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
                 </View>
             )}
 
-            {/* Conversation as screenplay/script format */}
+            {/* Conversation */}
             <ScrollView
                 style={chatStyles.dialogueScroll}
                 contentContainerStyle={chatStyles.dialogueContent}
+                ref={scrollRef => {
+                    if (scrollRef) {
+                        setTimeout(() => scrollRef.scrollToEnd({ animated: true }), 100);
+                    }
+                }}
             >
                 {messages.map((m, i) => (
-                    <View key={i} style={chatStyles.dialogueLine}>
+                    <View key={`msg-${i}`} style={chatStyles.dialogueLine}>
                         <Text style={chatStyles.speakerName}>
-                            {m.role === 'assistant' ? 'Vendor' : 'You'}
+                            {m.role === 'assistant' ? '👤' : 'You'}
                         </Text>
                         {renderMessageContent(m)}
                     </View>
@@ -189,38 +276,44 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
 
                 {loading && (
                     <View style={chatStyles.dialogueLine}>
-                        <Text style={chatStyles.speakerName}>Vendor</Text>
+                        <Text style={chatStyles.speakerName}>👤</Text>
                         <Text style={chatStyles.thinkingText}>...</Text>
                     </View>
                 )}
             </ScrollView>
 
             {/* Prompt area */}
-            <View style={chatStyles.promptArea}>
-                {currentHint && (
-                    <Text style={chatStyles.stageDirection}>
-                        {currentHint}
-                    </Text>
-                )}
-
-                <View style={chatStyles.inputRow}>
-                    <TextInput
-                        style={chatStyles.scriptInput}
-                        value={input}
-                        onChangeText={setInput}
-                        placeholder="What do you say?"
-                        placeholderTextColor="#999"
-                        multiline
-                    />
-                    <TouchableOpacity
-                        style={[chatStyles.speakBtn, loading && chatStyles.speakBtnDisabled]}
-                        onPress={handleSend}
-                        disabled={loading}
-                    >
-                        <Text style={chatStyles.speakBtnText}>→</Text>
-                    </TouchableOpacity>
+            {!isComplete && (
+                <View style={chatStyles.promptArea}>
+                    {currentHint && (
+                        <Text style={chatStyles.stageDirection}>{currentHint}</Text>
+                    )}
+                    <View style={chatStyles.inputRow}>
+                        <TextInput
+                            style={chatStyles.scriptInput}
+                            value={input}
+                            onChangeText={setInput}
+                            placeholder="What do you say?"
+                            placeholderTextColor="#999"
+                            multiline
+                            editable={!loading}
+                        />
+                        <TouchableOpacity
+                            style={[chatStyles.speakBtn, loading && chatStyles.speakBtnDisabled]}
+                            onPress={handleSend}
+                            disabled={loading}
+                        >
+                            <Text style={chatStyles.speakBtnText}>→</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
-            </View>
+            )}
+
+            {isComplete && (
+                <View style={chatStyles.completeFooter}>
+                    <Text style={chatStyles.completeText}>Scenario Complete ✓</Text>
+                </View>
+            )}
         </KeyboardAvoidingView>
     );
 };
@@ -382,6 +475,48 @@ const chatStyles = StyleSheet.create({
         color: '#FFF',
         fontSize: 20,
         fontWeight: '300',
+    },
+    feedbackToast: {
+        position: 'absolute',
+        top: 110,
+        alignSelf: 'center',
+        backgroundColor: '#2C4F2C',
+        borderRadius: 12,
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        zIndex: 100,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    feedbackToastText: {
+        color: '#FFF',
+        fontFamily: FONTS.sans,
+        fontSize: 13,
+        textAlign: 'center',
+    },
+    feedbackText: {
+        color: '#2C4F2C',
+        fontFamily: FONTS.serif,
+        fontStyle: 'italic',
+        fontSize: 15,
+        lineHeight: 22,
+    },
+    completeFooter: {
+        padding: 20,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#E8E4DB',
+        backgroundColor: '#F5F2EA',
+        alignItems: 'center',
+    },
+    completeText: {
+        fontSize: 16,
+        fontFamily: FONTS.serif,
+        color: '#556B2F',
+        fontWeight: '500',
     },
 });
 
