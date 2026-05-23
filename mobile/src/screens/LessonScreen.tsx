@@ -37,8 +37,8 @@ export const LessonScreen = () => {
             updateProgress({
                 lesson_slide_positions: {
                     ...progress.lesson_slide_positions,
-                    [lessonId]: currentIndex
-                }
+                    [lessonId]: currentIndex,
+                },
             });
         }
     }, [currentIndex, currentLesson]);
@@ -60,54 +60,62 @@ export const LessonScreen = () => {
 
     const finishLesson = async () => {
         await updateProgress({
-            completed_lessons: [...progress.completed_lessons, lessonId]
+            completed_lessons: [...progress.completed_lessons, lessonId],
         });
-        Alert.alert("Lesson Complete", "Well done!", [
-            { text: "Continue", onPress: () => navigation.goBack() }
+        Alert.alert('Lesson Complete', 'Well done!', [
+            { text: 'Continue', onPress: () => navigation.goBack() },
         ]);
     };
 
     if (!currentLesson) {
         return (
-            <View style={[globalStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <Text>Loading lesson...</Text>
+            <View style={[globalStyles.container, styles.center]}>
+                <Text style={styles.loadingText}>Loading...</Text>
             </View>
         );
     }
 
     const currentSlide = currentLesson.content[currentIndex];
-    const progressPercent = (currentIndex / currentLesson.content.length) * 100;
+    const isLast = currentIndex === currentLesson.content.length - 1;
+    const isFirst = currentIndex === 0;
+    const total = currentLesson.content.length;
 
     return (
         <SafeAreaView style={globalStyles.container}>
-            <View style={localStyles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={localStyles.backButton}>← Exit</Text>
+            {/* Top bar */}
+            <View style={styles.topBar}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Text style={styles.backText}>Back</Text>
                 </TouchableOpacity>
-                <View style={localStyles.progressBar}>
-                    <View style={[localStyles.progressFill, { width: `${progressPercent}%` }]} />
+                <Text style={styles.counter}>
+                    {currentIndex + 1} / {total}
+                </Text>
+                <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${((currentIndex + 1) / total) * 100}%` }]} />
                 </View>
             </View>
 
-            <View style={localStyles.content}>
+            {/* Slide content */}
+            <View style={styles.content}>
                 <SlideRenderer slide={currentSlide} />
             </View>
 
-            <View style={localStyles.footer}>
+            {/* Bottom navigation */}
+            <View style={styles.bottomBar}>
                 <TouchableOpacity
-                    style={[localStyles.navBtn, currentIndex === 0 && localStyles.disabled]}
+                    style={[styles.navBtn, styles.prevBtn, isFirst && styles.navBtnDisabled]}
                     onPress={handlePrev}
-                    disabled={currentIndex === 0}
+                    disabled={isFirst}
                 >
-                    <Text style={localStyles.navBtnText}>Previous</Text>
+                    <Text style={[styles.navBtnText, styles.prevText]}>Previous</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[localStyles.navBtn, { backgroundColor: COLORS.primary, borderColor: COLORS.primary }]}
+                    style={[styles.navBtn, styles.nextBtn]}
                     onPress={handleNext}
                 >
-                    <Text style={[localStyles.navBtnText, { color: 'white' }]}>
-                        {currentIndex === currentLesson.content.length - 1 ? "Finish" : "Next"}
+                    <Text style={[styles.navBtnText, styles.nextText]}>
+                        {isLast ? 'Finish' : 'Next'}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -115,60 +123,86 @@ export const LessonScreen = () => {
     );
 };
 
-const localStyles = StyleSheet.create({
-    header: {
+const styles = StyleSheet.create({
+    center: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontFamily: FONTS.sans,
+        color: COLORS.textLight,
+        fontSize: 15,
+    },
+    topBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        paddingHorizontal: 24,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        gap: 12,
     },
-    backButton: {
-        fontSize: 16,
+    backBtn: {
+        paddingVertical: 4,
+    },
+    backText: {
+        fontSize: 15,
+        fontFamily: FONTS.sans,
+        fontWeight: '600',
         color: COLORS.textLight,
-        marginRight: 24,
-        fontFamily: FONTS.sans
     },
-    progressBar: {
+    counter: {
+        fontSize: 13,
+        fontFamily: FONTS.sans,
+        fontWeight: '600',
+        color: COLORS.textLight,
+        minWidth: 48,
+        textAlign: 'center',
+    },
+    progressTrack: {
         flex: 1,
-        height: 6,
+        height: 4,
         backgroundColor: COLORS.border,
-        borderRadius: 3,
-        overflow: 'hidden'
+        borderRadius: 2,
+        overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
-        backgroundColor: COLORS.secondary
+        backgroundColor: COLORS.primary,
+        borderRadius: 2,
     },
     content: {
         flex: 1,
     },
-    footer: {
-        padding: 24,
+    bottomBar: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        borderTopWidth: 1,
-        borderTopColor: COLORS.border,
+        padding: 20,
+        paddingBottom: 24,
+        gap: 12,
     },
     navBtn: {
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 2,
-        minWidth: 110,
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 10,
         alignItems: 'center',
-        borderWidth: 1,
-        borderColor: COLORS.textLight
+        justifyContent: 'center',
     },
-    disabled: {
-        opacity: 0.3,
-        borderColor: COLORS.border
+    prevBtn: {
+        backgroundColor: COLORS.muted,
+    },
+    nextBtn: {
+        backgroundColor: COLORS.primary,
+    },
+    navBtnDisabled: {
+        opacity: 0.4,
     },
     navBtnText: {
-        color: COLORS.text,
-        fontWeight: 'bold',
-        fontSize: 16,
+        fontSize: 15,
         fontFamily: FONTS.sans,
-        letterSpacing: 0.5
-    }
+        fontWeight: '700',
+    },
+    prevText: {
+        color: COLORS.text,
+    },
+    nextText: {
+        color: '#FFF',
+    },
 });

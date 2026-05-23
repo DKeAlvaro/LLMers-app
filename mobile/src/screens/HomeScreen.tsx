@@ -23,7 +23,7 @@ export const HomeScreen = () => {
 
         return (
             <TouchableOpacity
-                style={[globalStyles.card, isLocked && styles.cardLocked]}
+                style={styles.card}
                 onPress={() => {
                     if (!isLocked) {
                         navigation.navigate('Lesson', { lessonId: item.id, lessonTitle: item.title });
@@ -31,69 +31,65 @@ export const HomeScreen = () => {
                 }}
                 disabled={isLocked}
             >
-                <View style={styles.cardHeader}>
-                    <Text style={[styles.cardTitle, isLocked && styles.textLocked]}>{item.title}</Text>
-                    {completed && <Text style={styles.check}>✓</Text>}
-                    {isLocked && <Text style={styles.lock}>🔒</Text>}
+                <View style={styles.cardLeft}>
+                    <Text style={[styles.cardIndex, completed && styles.cardIndexDone]}>
+                        {completed ? 'Done' : String(index + 1)}
+                    </Text>
                 </View>
-                <Text style={styles.cardDesc} numberOfLines={2}>
-                    {item.description || 'Learn new concepts in this lesson.'}
-                </Text>
+                <View style={styles.cardBody}>
+                    <Text style={[styles.cardTitle, isLocked && styles.textLocked]}>{item.title}</Text>
+                    <Text style={styles.cardDesc} numberOfLines={2}>
+                        {item.description || 'Learn new concepts in this lesson.'}
+                    </Text>
+                </View>
+                <View style={styles.cardRight}>
+                    {completed && <View style={styles.doneDot} />}
+                    {isLocked && <Text style={styles.lockedLabel}>Locked</Text>}
+                </View>
             </TouchableOpacity>
         );
     };
 
     const renderEmpty = () => {
-        if (needsRedownload) {
-            return (
-                <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyTitle}>⚠️ Outdated lesson format</Text>
-                    <Text style={styles.emptySubtitle}>
-                        The lessons on this device use an old format that is no longer supported.
-                        Re-download to get the latest versions.
-                    </Text>
-                    <TouchableOpacity
-                        style={[globalStyles.button, { marginTop: 24, backgroundColor: COLORS.secondary }]}
-                        onPress={async () => {
-                            console.log(`${LOG_PREFIX} re-download requested (old format detected)`);
-                            await setIsFirstRun(true);
-                        }}
-                    >
-                        <Text style={globalStyles.buttonText}>RE-DOWNLOAD LESSONS</Text>
-                    </TouchableOpacity>
-                </View>
-            );
-        }
-
+        const isOutdated = needsRedownload;
         return (
             <View style={styles.emptyContainer}>
-                <Text style={styles.emptyTitle}>No lessons found</Text>
+                <Text style={styles.emptyTitle}>
+                    {isOutdated ? 'Outdated format' : 'No lessons yet'}
+                </Text>
                 <Text style={styles.emptySubtitle}>
-                    Lesson data has not been downloaded yet, or was cleared when the cache was reset.
+                    {isOutdated
+                        ? 'Lesson data needs to be updated to the latest format.'
+                        : 'Download a language course to get started.'}
                 </Text>
                 <TouchableOpacity
-                    style={[globalStyles.button, { marginTop: 24 }]}
+                    style={[globalStyles.button, { marginTop: 20 }]}
                     onPress={async () => {
                         console.log(`${LOG_PREFIX} re-download requested`);
                         await setIsFirstRun(true);
                     }}
                 >
-                    <Text style={globalStyles.buttonText}>DOWNLOAD LESSONS</Text>
+                    <Text style={globalStyles.buttonText}>Download lessons</Text>
                 </TouchableOpacity>
             </View>
         );
     };
 
+    const langName = settings.selected_language?.split('-')[1] || '';
+
     return (
         <SafeAreaView style={globalStyles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>llmers</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-                    <Text style={styles.settingsLink}>Settings</Text>
+                <View>
+                    <Text style={styles.headerTitle}>llmers</Text>
+                    <Text style={styles.headerLang}>{langName}</Text>
+                </View>
+                <TouchableOpacity
+                    style={styles.settingsBtn}
+                    onPress={() => navigation.navigate('Settings')}
+                >
+                    <Text style={styles.settingsLabel}>Settings</Text>
                 </TouchableOpacity>
-            </View>
-            <View style={styles.subHeader}>
-                <Text style={styles.langInfo}>Current Language: {settings.selected_language}</Text>
             </View>
 
             <FlatList
@@ -111,40 +107,41 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 24,
-        paddingBottom: 16,
-        backgroundColor: COLORS.background,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        alignItems: 'flex-end',
+        paddingHorizontal: 24,
+        paddingTop: 16,
+        paddingBottom: 20,
     },
     headerTitle: {
-        fontFamily: FONTS.serif,
-        fontSize: 32,
-        color: COLORS.primary,
-        fontWeight: 'bold',
-    },
-    settingsLink: {
-        color: COLORS.textLight,
-        fontSize: 16,
+        fontSize: 30,
         fontFamily: FONTS.sans,
-        textDecorationLine: 'underline',
+        fontWeight: '800',
+        color: COLORS.text,
+        letterSpacing: -0.5,
     },
-    subHeader: {
-        padding: 12,
-        paddingHorizontal: 24,
-        alignItems: 'center',
-    },
-    langInfo: {
-        color: COLORS.secondary,
-        fontSize: 12,
+    headerLang: {
+        fontSize: 13,
         fontFamily: FONTS.sans,
+        color: COLORS.accent,
+        fontWeight: '600',
         textTransform: 'uppercase',
-        letterSpacing: 1,
-        fontWeight: 'bold',
+        marginTop: 2,
+    },
+    settingsBtn: {
+        paddingVertical: 6,
+        paddingHorizontal: 14,
+        borderRadius: 8,
+        backgroundColor: COLORS.muted,
+    },
+    settingsLabel: {
+        fontSize: 13,
+        fontFamily: FONTS.sans,
+        color: COLORS.textLight,
+        fontWeight: '600',
     },
     list: {
         padding: 16,
+        paddingTop: 4,
     },
     emptyList: {
         flex: 1,
@@ -153,56 +150,88 @@ const styles = StyleSheet.create({
     },
     emptyContainer: {
         alignItems: 'center',
-        paddingVertical: 40,
+        paddingVertical: 32,
     },
     emptyTitle: {
-        fontSize: 22,
-        fontFamily: FONTS.serif,
+        fontSize: 20,
+        fontFamily: FONTS.sans,
+        fontWeight: '700',
         color: COLORS.text,
-        marginBottom: 12,
+        marginBottom: 8,
     },
     emptySubtitle: {
-        fontSize: 15,
+        fontSize: 14,
         fontFamily: FONTS.sans,
         color: COLORS.textLight,
         textAlign: 'center',
-        lineHeight: 22,
+        lineHeight: 20,
     },
-    cardLocked: {
-        backgroundColor: '#F0F0F0',
-        borderColor: '#E0E0E0',
-        opacity: 0.6,
-    },
-    cardHeader: {
+    card: {
+        backgroundColor: COLORS.surface,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 10,
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 8,
         alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+    },
+    cardLeft: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: COLORS.muted,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 14,
+    },
+    cardIndex: {
+        fontSize: 15,
+        fontFamily: FONTS.sans,
+        fontWeight: '700',
+        color: COLORS.textLight,
+    },
+    cardIndexDone: {
+        fontSize: 11,
+        color: COLORS.success,
+        fontWeight: '600',
+    },
+    cardBody: {
+        flex: 1,
     },
     cardTitle: {
-        fontFamily: FONTS.serif,
-        fontSize: 20,
+        fontSize: 17,
+        fontFamily: FONTS.sans,
+        fontWeight: '600',
         color: COLORS.text,
-        flex: 1,
-        fontWeight: '500',
+        marginBottom: 3,
     },
     textLocked: {
         color: COLORS.textLight,
     },
     cardDesc: {
-        color: COLORS.textLight,
-        fontSize: 15,
+        fontSize: 13,
         fontFamily: FONTS.sans,
-        lineHeight: 22,
+        color: COLORS.textLight,
+        lineHeight: 18,
     },
-    check: {
-        color: COLORS.success,
-        fontSize: 18,
-        marginLeft: 8,
+    cardRight: {
+        marginLeft: 10,
+        alignItems: 'center',
     },
-    lock: {
-        fontSize: 16,
-        marginLeft: 8,
-        opacity: 0.5,
+    doneDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: COLORS.success,
+    },
+    lockedLabel: {
+        fontSize: 11,
+        fontFamily: FONTS.sans,
+        fontWeight: '600',
+        color: COLORS.textLight,
     },
 });

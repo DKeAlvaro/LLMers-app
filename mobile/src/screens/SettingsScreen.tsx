@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    Alert,
+    ScrollView,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useApp } from '../context/AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,54 +15,49 @@ import { COLORS, FONTS, globalStyles } from '../theme';
 
 export const SettingsScreen = () => {
     const navigation = useNavigation();
-    const { settings, setSettings, setIsFirstRun, resetApp } = useApp();
+    const { settings, setSettings, setIsFirstRun } = useApp();
     const [apiKey, setApiKey] = useState(settings.deepseek_api_key || '');
 
     const handleSave = async () => {
         await setSettings({ ...settings, deepseek_api_key: apiKey.trim() || null });
-        Alert.alert("Success", "Settings saved.");
+        Alert.alert('Saved', 'API key updated.');
     };
 
     const handleClear = async () => {
         setApiKey('');
         await setSettings({ ...settings, deepseek_api_key: null });
-        Alert.alert("Cleared", "API Key cleared.");
+        Alert.alert('Cleared', 'API key removed.');
     };
 
     const handleReset = async () => {
-        Alert.alert(
-            "Reset App",
-            "This will clear all progress. Continue?",
-            [
-                { text: "Cancel", style: "cancel" },
-                {
-                    text: "Reset",
-                    style: "destructive",
-                    onPress: async () => {
-                        await setIsFirstRun(true);
-                    }
-                }
-            ]
-        );
+        Alert.alert('Reset app', 'This will clear all progress and downloaded data.', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Reset',
+                style: 'destructive',
+                onPress: async () => {
+                    await setIsFirstRun(true);
+                },
+            },
+        ]);
     };
 
     return (
         <SafeAreaView style={globalStyles.container}>
-            <View style={localStyles.header}>
+            {/* Header */}
+            <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={localStyles.backButton}>← Back</Text>
+                    <Text style={styles.backText}>Back</Text>
                 </TouchableOpacity>
-                <Text style={localStyles.title}>Settings</Text>
-                <View style={{ width: 50 }} />
+                <Text style={styles.title}>Settings</Text>
+                <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView contentContainerStyle={localStyles.content}>
-                <View style={globalStyles.card}>
-                    <Text style={localStyles.cardTitle}>DeepSeek API Key</Text>
-                    <Text style={localStyles.info}>
-                        Enter your key to enable advanced AI features.
-                    </Text>
-
+            <ScrollView contentContainerStyle={styles.body}>
+                {/* API Key */}
+                <Text style={styles.sectionLabel}>API Key</Text>
+                <View style={styles.card}>
+                    <Text style={styles.fieldLabel}>DeepSeek API Key</Text>
                     <TextInput
                         style={globalStyles.input}
                         value={apiKey}
@@ -64,31 +67,34 @@ export const SettingsScreen = () => {
                         autoCapitalize="none"
                         secureTextEntry
                     />
-
-                    <View style={localStyles.buttons}>
+                    <View style={styles.actions}>
                         <TouchableOpacity style={globalStyles.button} onPress={handleSave}>
                             <Text style={globalStyles.buttonText}>Save</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[globalStyles.button, { backgroundColor: 'transparent', borderColor: COLORS.error }]}
+                            style={[globalStyles.outlineButton, { borderColor: COLORS.error }]}
                             onPress={handleClear}
                         >
-                            <Text style={[globalStyles.buttonText, { color: COLORS.error }]}>Clear</Text>
+                            <Text style={[globalStyles.outlineButtonText, { color: COLORS.error }]}>
+                                Clear
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                <View style={globalStyles.card}>
-                    <Text style={localStyles.cardTitle}>Data Management</Text>
-                    <Text style={localStyles.info}>
-                        Current Course: {settings.selected_language}
-                    </Text>
+                {/* Data */}
+                <Text style={styles.sectionLabel}>Data</Text>
+                <View style={styles.card}>
+                    <Text style={styles.fieldLabel}>Current course</Text>
+                    <Text style={styles.fieldValue}>{settings.selected_language}</Text>
 
                     <TouchableOpacity
-                        style={[globalStyles.button, { backgroundColor: 'transparent', borderColor: COLORS.secondary, marginTop: 16 }]}
+                        style={[globalStyles.outlineButton, { marginTop: 16, borderColor: COLORS.error }]}
                         onPress={handleReset}
                     >
-                        <Text style={[globalStyles.buttonText, { color: COLORS.secondary }]}>RESET APP DATA</Text>
+                        <Text style={[globalStyles.outlineButtonText, { color: COLORS.error }]}>
+                            Reset all data
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -96,44 +102,63 @@ export const SettingsScreen = () => {
     );
 };
 
-const localStyles = StyleSheet.create({
+const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border
+        paddingHorizontal: 20,
+        paddingVertical: 14,
     },
-    backButton: {
+    backText: {
+        fontSize: 15,
+        fontFamily: FONTS.sans,
+        fontWeight: '600',
         color: COLORS.textLight,
-        fontSize: 16,
-        fontFamily: FONTS.sans
     },
     title: {
-        fontSize: 20,
-        fontFamily: FONTS.serif,
-        fontWeight: 'bold',
-        color: COLORS.text
-    },
-    content: {
-        padding: 20
-    },
-    cardTitle: {
         fontSize: 18,
-        fontFamily: FONTS.serif,
-        marginBottom: 10,
-        color: COLORS.primary
-    },
-    info: {
+        fontFamily: FONTS.sans,
+        fontWeight: '700',
         color: COLORS.text,
-        marginBottom: 16,
-        lineHeight: 22,
-        fontFamily: FONTS.sans
     },
-    buttons: {
+    body: {
+        padding: 20,
+        paddingTop: 8,
+    },
+    sectionLabel: {
+        fontSize: 12,
+        fontFamily: FONTS.sans,
+        fontWeight: '700',
+        color: COLORS.textLight,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        marginBottom: 8,
+        marginTop: 14,
+        marginLeft: 4,
+    },
+    card: {
+        backgroundColor: COLORS.surface,
+        borderRadius: 12,
+        padding: 18,
+        marginBottom: 8,
+    },
+    fieldLabel: {
+        fontSize: 14,
+        fontFamily: FONTS.sans,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginBottom: 8,
+    },
+    fieldValue: {
+        fontSize: 14,
+        fontFamily: FONTS.sans,
+        color: COLORS.textLight,
+        marginBottom: 4,
+    },
+    actions: {
         flexDirection: 'row',
-        gap: 16,
-        marginTop: 8
-    }
+        gap: 12,
+        marginTop: 14,
+    },
 });

@@ -2,13 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SlideContent } from '../../types';
 import { substituteVars, getTargetLangName } from '../../services/utils';
+import { COLORS, FONTS } from '../../theme';
 
 export const VocabularySlide: React.FC<{ data: SlideContent }> = ({ data }) => {
-    // data.data is { "word": "translation" }
     if (!data?.data || typeof data.data !== 'object') {
         return (
             <View style={styles.center}>
-                <Text style={styles.title}>No vocabulary</Text>
+                <Text style={styles.emptyText}>No vocabulary</Text>
             </View>
         );
     }
@@ -18,7 +18,7 @@ export const VocabularySlide: React.FC<{ data: SlideContent }> = ({ data }) => {
         <View style={styles.center}>
             {entries.map(([word, translation], i) => (
                 <View key={`vocab-${i}`} style={styles.vocabRow}>
-                    <Text style={styles.title}>{word}</Text>
+                    <Text style={styles.word}>{word}</Text>
                     <Text style={styles.translation}>{translation}</Text>
                 </View>
             ))}
@@ -29,8 +29,8 @@ export const VocabularySlide: React.FC<{ data: SlideContent }> = ({ data }) => {
 export const ExpressionSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     return (
         <View style={styles.center}>
-            <Text style={styles.title}>{data.data?.phrase}</Text>
-            <Text style={styles.explanation}>{data.data?.meaning}</Text>
+            <Text style={styles.phrase}>{data.data?.phrase}</Text>
+            <Text style={styles.meaning}>{data.data?.meaning}</Text>
         </View>
     );
 };
@@ -38,7 +38,7 @@ export const ExpressionSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
 export const GrammarSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     return (
         <View style={styles.center}>
-            <Text style={styles.header}>{data.title}</Text>
+            <Text style={styles.sectionTitle}>{data.title}</Text>
             <Text style={styles.body}>{data.explanation}</Text>
         </View>
     );
@@ -49,56 +49,88 @@ export const TipSlide: React.FC<{ data: SlideContent }> = ({ data }) => {
     const text = substituteVars(data.text || '', { TARGET_LANG: langName });
     return (
         <View style={styles.center}>
-            <Text style={styles.icon}>💡</Text>
+            <View style={styles.tipBadge}>
+                <Text style={styles.tipBadgeText}>Tip</Text>
+            </View>
             <Text style={styles.body}>{text}</Text>
         </View>
     );
 };
-
-// ... other simple slides
 
 const styles = StyleSheet.create({
     center: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 24,
+        padding: 32,
+    },
+    emptyText: {
+        fontSize: 16,
+        color: COLORS.textLight,
+        fontFamily: FONTS.sans,
     },
     vocabRow: {
-        marginBottom: 24,
+        marginBottom: 28,
         alignItems: 'center',
     },
-    title: {
-        fontSize: 32,
-        fontWeight: 'bold',
+    word: {
+        fontSize: 34,
+        fontWeight: '800',
+        color: COLORS.text,
         textAlign: 'center',
-        marginBottom: 16
+        marginBottom: 8,
+        fontFamily: FONTS.sans,
     },
     translation: {
-        fontSize: 24,
-        fontStyle: 'italic',
-        color: '#666',
-        textAlign: 'center'
-    },
-    explanation: {
-        fontSize: 18,
-        color: '#666',
+        fontSize: 20,
+        color: COLORS.textLight,
         textAlign: 'center',
-        marginTop: 10
+        fontFamily: FONTS.sans,
     },
-    header: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center'
+    phrase: {
+        fontSize: 28,
+        fontWeight: '700',
+        color: COLORS.text,
+        textAlign: 'center',
+        marginBottom: 14,
+        fontFamily: FONTS.sans,
+    },
+    meaning: {
+        fontSize: 18,
+        color: COLORS.textLight,
+        textAlign: 'center',
+        fontFamily: FONTS.sans,
+        lineHeight: 26,
+    },
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 18,
+        textAlign: 'center',
+        fontFamily: FONTS.sans,
     },
     body: {
-        fontSize: 18,
-        lineHeight: 28,
-        textAlign: 'center'
+        fontSize: 17,
+        lineHeight: 26,
+        color: COLORS.text,
+        textAlign: 'center',
+        fontFamily: FONTS.sans,
+        maxWidth: 320,
     },
-    icon: {
-        fontSize: 48,
-        marginBottom: 20
-    }
+    tipBadge: {
+        backgroundColor: COLORS.primary,
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 5,
+        marginBottom: 16,
+    },
+    tipBadgeText: {
+        color: '#FFF',
+        fontSize: 12,
+        fontWeight: '700',
+        fontFamily: FONTS.sans,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
 });
