@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+} from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useLessons } from '../hooks/useLessons';
@@ -81,45 +89,50 @@ export const LessonScreen = () => {
     const total = currentLesson.content.length;
 
     return (
-        <SafeAreaView style={globalStyles.container}>
-            {/* Top bar */}
-            <View style={styles.topBar}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Text style={styles.backText}>Back</Text>
-                </TouchableOpacity>
-                <Text style={styles.counter}>
-                    {currentIndex + 1} / {total}
-                </Text>
-                <View style={styles.progressTrack}>
-                    <View style={[styles.progressFill, { width: `${((currentIndex + 1) / total) * 100}%` }]} />
-                </View>
-            </View>
-
-            {/* Slide content */}
-            <View style={styles.content}>
-                <SlideRenderer slide={currentSlide} />
-            </View>
-
-            {/* Bottom navigation */}
-            <View style={styles.bottomBar}>
-                <TouchableOpacity
-                    style={[styles.navBtn, styles.prevBtn, isFirst && styles.navBtnDisabled]}
-                    onPress={handlePrev}
-                    disabled={isFirst}
-                >
-                    <Text style={[styles.navBtnText, styles.prevText]}>Previous</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                    style={[styles.navBtn, styles.nextBtn]}
-                    onPress={handleNext}
-                >
-                    <Text style={[styles.navBtnText, styles.nextText]}>
-                        {isLast ? 'Finish' : 'Next'}
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <SafeAreaView style={globalStyles.container}>
+                {/* Top bar */}
+                <View style={styles.topBar}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <Text style={styles.backText}>Back</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.counter}>
+                        {currentIndex + 1} / {total}
                     </Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+                    <View style={styles.progressTrack}>
+                        <View style={[styles.progressFill, { width: `${((currentIndex + 1) / total) * 100}%` }]} />
+                    </View>
+                </View>
+
+                {/* Slide content */}
+                <View style={styles.content}>
+                    <SlideRenderer slide={currentSlide} />
+                </View>
+
+                {/* Bottom navigation */}
+                <View style={styles.bottomBar}>
+                    <TouchableOpacity
+                        style={[styles.navBtn, styles.prevBtn, isFirst && styles.navBtnDisabled]}
+                        onPress={handlePrev}
+                        disabled={isFirst}
+                    >
+                        <Text style={[styles.navBtnText, styles.prevText]}>Previous</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.navBtn, styles.nextBtn]}
+                        onPress={handleNext}
+                    >
+                        <Text style={[styles.navBtnText, styles.nextText]}>
+                            {isLast ? 'Finish' : 'Next'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        </KeyboardAvoidingView>
     );
 };
 

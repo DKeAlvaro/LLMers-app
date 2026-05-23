@@ -7,8 +7,6 @@ import {
     TouchableOpacity,
     ScrollView,
     ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
 } from 'react-native';
 import { SlideContent } from '../../types';
 import { LLMService } from '../../api/llm';
@@ -285,11 +283,7 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
     };
 
     return (
-        <KeyboardAvoidingView
-            style={chatStyles.container}
-            behavior="padding"
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
+        <View style={chatStyles.container}>
             {/* Header */}
             <View style={chatStyles.header}>
                 <Text style={chatStyles.headerTitle}>{data.title}</Text>
@@ -371,7 +365,7 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
                     <Text style={chatStyles.doneText}>Complete</Text>
                 </View>
             )}
-        </KeyboardAvoidingView>
+        </View>
     );
 };
 
