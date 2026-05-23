@@ -23,7 +23,11 @@ export interface SlideContent {
     expected_concept?: string; // NEW: Concept to validate
     system_prompt?: string;  // NEW: Custom validation prompt
     goals?: string[];
-    conversation_flow?: { title: string; chatbot_message: string }[]; // Interactive scenario steps
+    conversation_flow?: {
+        title: string;
+        chatbot_message: string;
+        translation?: string;
+    }[]; // Interactive scenario steps
 }
 
 export interface UserProgress {
