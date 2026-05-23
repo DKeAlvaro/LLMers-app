@@ -89,50 +89,49 @@ export const LessonScreen = () => {
     const total = currentLesson.content.length;
 
     return (
-        <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-            <SafeAreaView style={globalStyles.container}>
-                {/* Top bar */}
-                <View style={styles.topBar}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                        <Text style={styles.backText}>Back</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.counter}>
-                        {currentIndex + 1} / {total}
+        <SafeAreaView style={globalStyles.container}>
+            {/* Top bar */}
+            <View style={styles.topBar}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Text style={styles.backText}>Back</Text>
+                </TouchableOpacity>
+                <Text style={styles.counter}>
+                    {currentIndex + 1} / {total}
+                </Text>
+                <View style={styles.progressTrack}>
+                    <View style={[styles.progressFill, { width: `${((currentIndex + 1) / total) * 100}%` }]} />
+                </View>
+            </View>
+
+            {/* Slide content — keyboard avoidance only here */}
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+            >
+                <SlideRenderer slide={currentSlide} />
+            </KeyboardAvoidingView>
+
+            {/* Bottom navigation — stays fixed, hidden by keyboard */}
+            <View style={styles.bottomBar}>
+                <TouchableOpacity
+                    style={[styles.navBtn, styles.prevBtn, isFirst && styles.navBtnDisabled]}
+                    onPress={handlePrev}
+                    disabled={isFirst}
+                >
+                    <Text style={[styles.navBtnText, styles.prevText]}>Previous</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.navBtn, styles.nextBtn]}
+                    onPress={handleNext}
+                >
+                    <Text style={[styles.navBtnText, styles.nextText]}>
+                        {isLast ? 'Finish' : 'Next'}
                     </Text>
-                    <View style={styles.progressTrack}>
-                        <View style={[styles.progressFill, { width: `${((currentIndex + 1) / total) * 100}%` }]} />
-                    </View>
-                </View>
-
-                {/* Slide content */}
-                <View style={styles.content}>
-                    <SlideRenderer slide={currentSlide} />
-                </View>
-
-                {/* Bottom navigation */}
-                <View style={styles.bottomBar}>
-                    <TouchableOpacity
-                        style={[styles.navBtn, styles.prevBtn, isFirst && styles.navBtnDisabled]}
-                        onPress={handlePrev}
-                        disabled={isFirst}
-                    >
-                        <Text style={[styles.navBtnText, styles.prevText]}>Previous</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[styles.navBtn, styles.nextBtn]}
-                        onPress={handleNext}
-                    >
-                        <Text style={[styles.navBtnText, styles.nextText]}>
-                            {isLast ? 'Finish' : 'Next'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
-        </KeyboardAvoidingView>
+                </TouchableOpacity>
+            </View>
+        </SafeAreaView>
     );
 };
 
