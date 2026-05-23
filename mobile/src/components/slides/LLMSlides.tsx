@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     ScrollView,
     ActivityIndicator,
+    Keyboard,
 } from 'react-native';
 import { SlideContent } from '../../types';
 import { LLMService } from '../../api/llm';
@@ -91,6 +92,7 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
     const [initialized, setInitialized] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
     const scrollRef = useRef<ScrollView>(null);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [extractedVars, setExtractedVars] = useState<Record<string, string>>({});
     const [feedback, setFeedback] = useState<string | null>(null);
     const [translation, setTranslation] = useState<{
@@ -114,6 +116,21 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
             setInitialized(true);
         }
     }, [conversationFlow.length > 0 && conversationFlow[0]?.chatbot_message, initialized]);
+
+    // Keyboard handling
+    useEffect(() => {
+        const show = Keyboard.addListener('keyboardDidShow', (e) => {
+            setKeyboardHeight(e.endCoordinates.height);
+            setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+        });
+        const hide = Keyboard.addListener('keyboardDidHide', () => {
+            setKeyboardHeight(0);
+        });
+        return () => {
+            show.remove();
+            hide.remove();
+        };
+    }, []);
 
     const handleSentenceClick = (sentence: string, translationText?: string) => {
         if (!translationText) return;
@@ -314,7 +331,10 @@ export const InteractiveScenarioSlide: React.FC<{ data: SlideContent }> = ({ dat
             <ScrollView
                 ref={scrollRef}
                 style={chatStyles.scroll}
-                contentContainerStyle={chatStyles.scrollContent}
+                contentContainerStyle={[
+                    chatStyles.scrollContent,
+                    { paddingBottom: 8 + keyboardHeight },
+                ]}
                 keyboardShouldPersistTaps="handled"
                 onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
             >

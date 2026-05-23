@@ -5,8 +5,6 @@ import {
     StyleSheet,
     TouchableOpacity,
     Alert,
-    KeyboardAvoidingView,
-    Platform,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -103,14 +101,10 @@ export const LessonScreen = () => {
                 </View>
             </View>
 
-            {/* Slide content — keyboard avoidance only here */}
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-            >
+            {/* Slide content */}
+            <View style={styles.content}>
                 <SlideRenderer slide={currentSlide} />
-            </KeyboardAvoidingView>
+            </View>
 
             {/* Bottom navigation — stays fixed, hidden by keyboard */}
             <View style={styles.bottomBar}>
