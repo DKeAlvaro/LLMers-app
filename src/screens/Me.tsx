@@ -99,7 +99,7 @@ export function Me() {
           {last7.map((x) => (
             <div key={x.d} className="week-day">
               <div className="week-bar">
-                <div className={`week-fill ${x.xp >= s.settings.dailyGoal ? 'is-goal' : ''}`} style={{ height: `${(x.xp / maxXp) * 100}%` }} />
+                <div className={`week-fill ${x.xp >= s.settings.dailyGoal ? 'is-goal' : ''}`} style={{ height: x.xp ? `max(6px, ${(x.xp / maxXp) * 100}%)` : 0 }} />
               </div>
               <span>{x.label}</span>
             </div>

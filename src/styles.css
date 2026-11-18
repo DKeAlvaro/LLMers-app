@@ -2431,7 +2431,6 @@ p {
   width: 100%;
   background: var(--blue);
   border-radius: 8px;
-  min-height: 3px;
 }
 .week-fill.is-goal {
   background: var(--orange);
@@ -2935,4 +2934,23 @@ p {
     align-items: start;
     padding: 0 36px 130px;
   }
+}
+:root[data-theme='dark'] .lesson .btn-primary,
+:root[data-theme='dark'] .practice .btn-primary,
+:root[data-theme='dark'] .done .btn-primary,
+:root[data-theme='dark'] .intro .btn-primary {
+  background: var(--unit, var(--ink));
+  color: #fff;
+}
+:root[data-theme='dark'] .sheet .btn-primary {
+  color: #fff;
+}
+:root[data-theme='dark'] .sheet-good .btn-primary {
+  background: #1f8a52;
+}
+:root[data-theme='dark'] .sheet-almost .btn-primary {
+  background: #b07a10;
+}
+:root[data-theme='dark'] .sheet-bad .btn-primary {
+  background: #c23b3b;
 }
