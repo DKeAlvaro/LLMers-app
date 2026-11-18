@@ -1,40 +1,26 @@
 {
-  "name": "llmers-app",
-  "version": "1.0.0",
-  "description": "",
-  "main": "mobile/index.ts",
+  "name": "llmers",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DKeAlvaro/llmers.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/DKeAlvaro/llmers/issues"
-  },
-  "homepage": "https://github.com/DKeAlvaro/llmers#readme",
-  "devDependencies": {
-    "@types/react": "~19.1.10",
-    "typescript": "~5.9.2"
+    "sync": "node scripts/sync-course.mjs",
+    "dev": "vite",
+    "build": "node scripts/sync-course.mjs && tsc -p tsconfig.json && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "2.2.0",
-    "@react-navigation/native": "^7.1.26",
-    "@react-navigation/native-stack": "^7.9.0",
-    "expo": "^54.0.30",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
-    "react-native-gesture-handler": "~2.28.0",
-    "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0"
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vite-plugin-pwa": "^2.0.0"
   }
 }

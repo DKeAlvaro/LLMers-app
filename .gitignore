@@ -1,12 +1,5 @@
-*pycache*
-.trae
+node_modules
+dist
+public/course
+*.log
 .env
-/build
-# *json (ignore json files)
-/web
-summary.md
-lessons/
-secret/
-create_video.py
-*node_modules
-*.expo

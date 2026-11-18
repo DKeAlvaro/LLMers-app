@@ -1,0 +1,24 @@
+[Unit]
+Description=LLMers correction server (Jev)
+After=network-online.target
+
+[Service]
+User=llmers
+Group=llmers
+EnvironmentFile=/etc/llmers-proxy.env
+Environment=PORT=8796
+ExecStart=/usr/bin/node /opt/llmers/proxy.mjs
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+MemoryMax=200M
+
+[Install]
+WantedBy=multi-user.target
