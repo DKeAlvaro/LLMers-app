@@ -108,12 +108,9 @@ async function jev(b) {
     },
     error: { type: 'choice', instructions: 'What is the main mistake in `answer`?', criteria: ERRORS },
   };
-  if (b.mistakes.length) {
-    const criteria = { none: 'No mistake, the answer is correct' };
-    for (const m of b.mistakes) criteria[m.id] = m.pattern;
-    criteria.other = 'A different mistake, none of the ones listed';
-    questions.mistake = { type: 'choice', instructions: 'Which of these mistakes does `answer` make?', criteria };
-  }
+  // One yes/no question per mistake the lesson predicted for this exercise: far more sensitive than the
+  // overall `correct` question (Jev passes 'Ik heb naar huis gegaan' as correct, but flags m1 'hebben with gaan').
+  for (const m of b.mistakes) questions[`m_${m.id}`] = { type: 'noul', instructions: `Does \`answer\` make this specific mistake: ${m.pattern}` };
   const words = b.answer.split(/\s+/).filter(Boolean).slice(0, 24);
   if (words.length > 1) {
     const criteria = {};
@@ -136,15 +133,23 @@ async function jev(b) {
   const typo = a.typo_only.noul;
   let error = a.error.choice;
   const order = a.order.noul;
-  let verdict = 'wrong';
-  if (correct >= 0.5 && order >= 0.5) verdict = 'correct';
-  else if (correct >= 0.5) error = 'word_order';
-  else if (typo >= 0.6 && meaning >= 0.6) verdict = 'typo';
+  const hits = b.mistakes.map((m) => ({ id: m.id, p: a[`m_${m.id}`]?.noul ?? 0 })).sort((x, y) => y.p - x.p);
+  const fired = hits.find((h) => h.p >= 0.5);
+  let verdict;
+  if (fired) {
+    // The learner made a mistake the lesson predicted. Only a pure spelling slip still counts as "almost".
+    verdict = error === 'spelling' && typo >= 0.6 && meaning >= 0.6 ? 'typo' : 'wrong';
+  } else if (correct >= 0.5 && order >= 0.5) verdict = 'correct';
+  else if (correct >= 0.5) {
+    verdict = 'wrong';
+    error = 'word_order';
+  } else if (typo >= 0.6 && meaning >= 0.6) verdict = 'typo';
+  else verdict = 'wrong';
   if (verdict === 'correct') error = 'none';
-  else if (error === 'none') error = verdict === 'typo' ? 'spelling' : 'other';
+  else if (verdict === 'typo') error = 'spelling';
+  else if (error === 'none') error = 'other';
   const out = { verdict, error, confidence: Math.round(correct * 100) / 100, scores: { correct, meaning, typo, order } };
-  if (verdict !== 'correct' && a.mistake && !['none', 'other'].includes(a.mistake.choice) && a.mistake.confidence >= 0.35)
-    out.mistake = a.mistake.choice;
+  if (verdict !== 'correct' && hits[0] && hits[0].p >= 0.35) out.mistake = hits[0].id;
   if (verdict !== 'correct' && a.word && a.word.choice !== 'none' && a.word.confidence >= 0.35) out.word = Number(a.word.choice.slice(1));
   return out;
 }
