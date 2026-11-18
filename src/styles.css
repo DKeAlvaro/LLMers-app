@@ -209,7 +209,9 @@ p {
   color: #10151d;
 }
 .lesson .btn-primary,
-.practice .btn-primary {
+.practice .btn-primary,
+.done .btn-primary,
+.intro .btn-primary {
   background: var(--unit, var(--ink));
   color: #fff;
 }

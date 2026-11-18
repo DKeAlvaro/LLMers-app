@@ -41,13 +41,13 @@ export function TestScreen({ unitId }: { unitId: string }) {
   if (score !== null) {
     const pass = score >= 80;
     return (
-      <div className="screen done">
+      <div className="screen done" style={{ ['--unit' as string]: color }}>
         <div className="done-hero">
           <div className="done-stamp" style={{ background: pass ? color : 'var(--muted)' }}>
             <Icon name={pass ? 'flag' : 'retry'} size={40} stroke={2.6} />
           </div>
           <div className="done-kicker">Line {unitNumber(unitId)} test</div>
-          <h1 className="nl">{pass ? 'Geslaagd!' : 'Bijna!'}</h1>
+          <h1 className="nl">{pass ? 'Geslaagd!' : score >= 50 ? 'Bijna!' : 'Nog even oefenen'}</h1>
           <div className="done-stats">
             <div>
               <b>{score}%</b>
@@ -58,7 +58,7 @@ export function TestScreen({ unitId }: { unitId: string }) {
               <span>best</span>
             </div>
           </div>
-          <p className="muted center-text">{pass ? 'You master this line. On to the next one.' : 'Review the lessons of this line and try again: 80% passes.'}</p>
+          <p className="muted center-text">{pass ? 'You master this line. On to the next one.' : 'Go back over the lessons of this line, then try again: 80% passes.'}</p>
         </div>
         <div className="checkbar">
           <button className="btn btn-ghost" onClick={() => go('/')}>
@@ -81,7 +81,7 @@ export function TestScreen({ unitId }: { unitId: string }) {
 
   if (!started)
     return (
-      <div className="screen intro">
+      <div className="screen intro" style={{ ['--unit' as string]: color }}>
         <div className="intro-hero" style={{ background: color }}>
           <div className="tiles-bg" />
           <button className="icon-btn on-dark" onClick={() => go('/')} aria-label="Back">
@@ -109,7 +109,7 @@ export function TestScreen({ unitId }: { unitId: string }) {
     );
 
   return (
-    <div className="screen">
+    <div className="screen lesson" style={{ ['--unit' as string]: color }}>
       <Practice
         items={items}
         lessonId={`test-${unitId}`}
